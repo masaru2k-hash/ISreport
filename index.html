@@ -221,9 +221,8 @@
             const [selTerm, setSelTerm] = useState(null);
             const [errorType, setErrorType] = useState(null); 
             const [selAirlines, setSelAirlines] = useState(new Set());
-            const [showEx, setShowEx] = useState(false); // 종료 모달 상태
+            const [showEx, setShowEx] = useState(false);
 
-            // PWA 설치 안내 로직
             useEffect(() => {
                 const isIos = () => {
                     const userAgent = window.navigator.userAgent.toLowerCase();
@@ -258,7 +257,6 @@
                 }
             }, []);
 
-            // 뒤로가기 및 앱 종료 로직
             useEffect(() => {
                 const initHistory = () => {
                     if (!window.history.state || window.history.state.page !== Page.Main) {
@@ -269,7 +267,6 @@
                 
                 const handlePopState = (e) => {
                     if (e.state && e.state.page === 'root') {
-                        // 메인 화면에서 뒤로가기를 눌러 root로 떨어졌을 때 종료 모달 띄우기
                         setShowEx(true); 
                         window.history.pushState({ page: Page.Main }, ''); 
                     } else if (e.state && e.state.page !== undefined) {
@@ -308,21 +305,19 @@
                 return Array.from(codes).sort();
             }, [flights, selTerm]);
 
-            // 브라우저 히스토리를 사용한 네비게이션 함수
             const nav = (p) => {
                 window.history.pushState({ page: p }, '');
                 setPage(p);
             };
             const back = () => window.history.back();
 
-            // 진짜로 앱(창)을 닫는 함수
             const exitApp = () => {
                 setShowEx(false);
                 if (navigator.app) {
-                    navigator.app.exitApp(); // 일부 하이브리드 환경 지원
+                    navigator.app.exitApp(); 
                 } else {
-                    window.history.go(-2); // 히스토리를 탈출하여 기본 화면으로 복귀
-                    setTimeout(() => window.close(), 100); // 탭 닫기 시도 (PWA나 직접 연 창에서 동작)
+                    window.history.go(-2); 
+                    setTimeout(() => window.close(), 100); 
                 }
             };
 
@@ -393,10 +388,11 @@
                             <div className="flex flex-col h-full">
                                 <Header onBack={back} title={`[${errorType}] 항공사 선택`} />
                                 <div className="flex-grow overflow-y-auto p-3 content-start">
-                                    <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                                    {/* 그리드 열 수를 늘리고 간격과 패딩을 줄여 버튼 사이즈 축소 */}
+                                    <div className="grid grid-cols-5 sm:grid-cols-6 gap-1.5">
                                         {currentTerminalAirlines.map(al => (
                                             <button key={al} onClick={() => toggleAirline(al)} 
-                                                className={`py-4 rounded font-bold text-lg transition-all ${selAirlines.has(al) ? 'bg-rose-500 text-white ring-2 ring-white scale-95' : 'bg-slate-800 text-slate-400'}`}>
+                                                className={`py-2.5 rounded font-bold text-base transition-all ${selAirlines.has(al) ? 'bg-rose-500 text-white ring-1 ring-white scale-95' : 'bg-slate-800 text-slate-400'}`}>
                                                 {al}
                                             </button>
                                         ))}
