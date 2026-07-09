@@ -16,7 +16,6 @@
         #wrapper { display: flex; flex-direction: column; height: 100dvh; }
         #content { flex: 1; width: 100%; overflow-y: auto; position: relative; overscroll-behavior-y: contain; }
         
-        /* PWA 설치 배너 스타일 */
         .pwa-banner {
             position: fixed; bottom: 0; left: 0; width: 100%; background: #333; color: white; padding: 15px;
             display: flex; justify-content: space-between; align-items: center; z-index: 9999; box-sizing: border-box;
@@ -388,7 +387,6 @@
                             <div className="flex flex-col h-full">
                                 <Header onBack={back} title={`[${errorType}] 항공사 선택`} />
                                 <div className="flex-grow overflow-y-auto p-3 content-start">
-                                    {/* 그리드 열 수를 늘리고 간격과 패딩을 줄여 버튼 사이즈 축소 */}
                                     <div className="grid grid-cols-5 sm:grid-cols-6 gap-1.5">
                                         {currentTerminalAirlines.map(al => (
                                             <button key={al} onClick={() => toggleAirline(al)} 
@@ -410,17 +408,39 @@
 
                     case Page.PingLossResult:
                         const nowMs = new Date().getTime();
+                        
+                        // 오늘 날짜 문자열 구하기 (예: "20260709")
+                        const getYYYYMMDD = (d) => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+                        const todayStr = getYYYYMMDD(new Date());
+
                         const noFlights = [];
                         const closed = [];
                         const notOpen = [];
                         const activeList = [];
 
                         Array.from(selAirlines).forEach(al => {
-                            const termFlights = flights.filter(f => 
-                                f.iata === al && 
-                                (selTerm === 'T1' ? (f.terminalid === 'P01' || f.terminalid === 'P02') : f.terminalid === 'P03')
-                            );
+                            // 필터링 강화: 오늘 항공편이거나 4시간 이내로 남은 내일(새벽) 항공편만 포함
+                            const termFlights = flights.filter(f => {
+                                const isMatch = f.iata === al && 
+                                    (selTerm === 'T1' ? (f.terminalid === 'P01' || f.terminalid === 'P02') : f.terminalid === 'P03');
+                                
+                                if (!isMatch) return false;
 
+                                const dep = new Date(
+                                    parseInt(f.scheduleDateTime.substring(0, 4)),
+                                    parseInt(f.scheduleDateTime.substring(4, 6)) - 1,
+                                    parseInt(f.scheduleDateTime.substring(6, 8)),
+                                    parseInt(f.scheduleDateTime.substring(8, 10)),
+                                    parseInt(f.scheduleDateTime.substring(10, 12))
+                                );
+                                const diffMins = (dep.getTime() - nowMs) / (1000 * 60);
+                                const isToday = f.scheduleDateTime.startsWith(todayStr);
+
+                                // 오늘 편이거나, 4시간(240분) 이내의 임박한 비행편만 계산에 포함
+                                return isToday || (!isToday && diffMins <= 240);
+                            });
+
+                            // 조건에 맞는 비행편이 전혀 없으면 '금일 운항편 없음'으로 처리
                             if (termFlights.length === 0) {
                                 noFlights.push(al);
                                 return;
@@ -504,7 +524,6 @@
                 <div className="max-w-md mx-auto bg-slate-900 h-full shadow-2xl relative">
                     {renderContent()}
                     
-                    {/* 앱 종료 확인 모달 */}
                     {showEx && (
                         <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50">
                             <div className="bg-slate-800 p-6 rounded-lg w-4/5 text-center shadow-xl">
