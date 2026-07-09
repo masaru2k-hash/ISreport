@@ -39,7 +39,6 @@
         // T1 전용 항공사 (OZ, RS 제거됨)
         const T1_AIRLINES = ['7C','8M','9C','AA','AC','AY','BR','BX','CA','CX','CZ','DD','EK','EY','FD','FM','GK','GS','HB','HO','HU','HX','HY','IT','JD','JX','KC','LO','MH','MM','MU','OM','PR','QD','QK','QR','SC','SL','SQ','SU','TG','TK','TR','TW','UA','UO','UZ','VJ','VN','VZ','XJ','ZE','ZH'];
 
-        // 장애 유형 선택 페이지(ErrorTypeSelect) 추가
         const Page = { Main: 0, PingLossTerm: 1, ErrorTypeSelect: 2, PingLossAirlines: 3, PingLossResult: 4 };
 
         const parseFlightsFromXML = (xmlText) => {
@@ -82,7 +81,6 @@
             return all.sort((a, b) => a.scheduleDateTime.localeCompare(b.scheduleDateTime));
         };
 
-        // --- 공통 컴포넌트 ---
         const LoadingSpinner = () => (
             <div className="flex flex-col justify-center items-center h-full">
                 <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-indigo-500 mb-4"></div>
@@ -97,7 +95,6 @@
             </header>
         );
 
-        // --- Ping Loss 상태 체크 로직 ---
         const getFlightStatusInfo = (flight, nowMs) => {
             if (!flight.scheduleDateTime || flight.scheduleDateTime.length !== 12) return { state: 'UNKNOWN', zone: '알수없음' };
             
@@ -117,7 +114,6 @@
             else if (diffMins < 50 && !isDelayed) state = 'CLOSED';
             else if (diffMins < 50 && isDelayed) state = 'OPEN'; 
 
-            // Zone 추출 로직 변경: K01-K09 등 원본 형태 그대로 유지
             let zone = '미정';
             if (flight.chkinrange && flight.chkinrange !== '---') {
                 zone = flight.chkinrange;
@@ -126,7 +122,6 @@
             return { state, zone };
         };
 
-        // --- 개별 항공사 현황 보고 컴포넌트 ---
         const ActiveAirlineCard = ({ airline, zone }) => {
             const [status, setStatus] = useState(null);
             const [congestion, setCongestion] = useState(null);
@@ -142,12 +137,15 @@
             };
             
             const getStatusText = (s) => s === '지연발생' ? '시스템 지연발생' : s;
-            const finalString = `[${airline} ${getStatusText(status)} 혼잡도 ${congestion}]`;
+            
+            // 괄호를 제외한 순수 텍스트만 변수에 저장
+            const finalString = `${airline} ${getStatusText(status)} 혼잡도 ${congestion}`;
             
             if (confirmed) {
                 return (
                     <div className="bg-slate-800 p-4 rounded-lg mb-3 border-l-4 border-indigo-500 shadow-md">
-                        <div className="font-mono text-lg mb-3 break-all">{finalString}</div>
+                        {/* 화면에 출력할 때만 괄호 추가 */}
+                        <div className="font-mono text-lg mb-3 break-all">[{finalString}]</div>
                         <div className="flex justify-end gap-2">
                             <button onClick={() => setConfirmed(false)} className="bg-slate-600 px-4 py-2 rounded font-bold text-sm">취소(수정)</button>
                             <button onClick={() => copyToClip(finalString)} className="bg-cyan-600 px-6 py-2 rounded font-bold text-sm flex items-center gap-1">
@@ -161,7 +159,6 @@
             return (
                 <div className="bg-slate-800 p-4 rounded-lg mb-3 border-l-4 border-slate-500 shadow-md">
                     <div className="flex items-center gap-3 mb-4">
-                        {/* 괄호 안의 문구 변경 [K01-K09] 형태 */}
                         <span className="bg-slate-700 px-3 py-1 rounded font-bold text-indigo-300">[{zone}]</span>
                         <span className="text-2xl font-bold">{airline}</span>
                     </div>
@@ -357,9 +354,10 @@
                             }
                         });
 
-                        const strNoFlight = noFlights.length > 0 ? `[${noFlights.join(',')} 금일 운항편 없음]` : null;
-                        const strClosed = closed.length > 0 ? `[${closed.join(',')} 카운터 마감]` : null;
-                        const strNotOpen = notOpen.length > 0 ? `[${notOpen.join(',')} 카운터 오픈 전]` : null;
+                        // 괄호를 제외한 순수 텍스트만 변수에 할당
+                        const strNoFlight = noFlights.length > 0 ? `${noFlights.join(',')} 금일 운항편 없음` : null;
+                        const strClosed = closed.length > 0 ? `${closed.join(',')} 카운터 마감` : null;
+                        const strNotOpen = notOpen.length > 0 ? `${notOpen.join(',')} 카운터 오픈 전` : null;
 
                         return (
                             <div className="flex flex-col h-full">
@@ -370,19 +368,22 @@
                                         <div className="space-y-3">
                                             {strNoFlight && (
                                                 <div className="flex justify-between items-center bg-slate-800 p-4 rounded-lg">
-                                                    <span className="font-mono text-lg text-rose-300 break-all">{strNoFlight}</span>
+                                                    {/* 화면에 출력할 때만 괄호 추가 */}
+                                                    <span className="font-mono text-lg text-rose-300 break-all">[{strNoFlight}]</span>
                                                     <button onClick={() => copySimpleText(strNoFlight)} className="ml-2 bg-cyan-600 px-3 py-2 rounded font-bold shrink-0">복사</button>
                                                 </div>
                                             )}
                                             {strClosed && (
                                                 <div className="flex justify-between items-center bg-slate-800 p-4 rounded-lg">
-                                                    <span className="font-mono text-lg text-slate-400 break-all">{strClosed}</span>
+                                                    {/* 화면에 출력할 때만 괄호 추가 */}
+                                                    <span className="font-mono text-lg text-slate-400 break-all">[{strClosed}]</span>
                                                     <button onClick={() => copySimpleText(strClosed)} className="ml-2 bg-cyan-600 px-3 py-2 rounded font-bold shrink-0">복사</button>
                                                 </div>
                                             )}
                                             {strNotOpen && (
                                                 <div className="flex justify-between items-center bg-slate-800 p-4 rounded-lg">
-                                                    <span className="font-mono text-lg text-amber-300 break-all">{strNotOpen}</span>
+                                                    {/* 화면에 출력할 때만 괄호 추가 */}
+                                                    <span className="font-mono text-lg text-amber-300 break-all">[{strNotOpen}]</span>
                                                     <button onClick={() => copySimpleText(strNotOpen)} className="ml-2 bg-cyan-600 px-3 py-2 rounded font-bold shrink-0">복사</button>
                                                 </div>
                                             )}
