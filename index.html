@@ -15,12 +15,40 @@
         }
         #wrapper { display: flex; flex-direction: column; height: 100dvh; }
         #content { flex: 1; width: 100%; overflow-y: auto; position: relative; overscroll-behavior-y: contain; }
+        
+        /* PWA 설치 배너 스타일 */
+        .pwa-banner {
+            position: fixed; bottom: 0; left: 0; width: 100%; background: #333; color: white; padding: 15px;
+            display: flex; justify-content: space-between; align-items: center; z-index: 9999; box-sizing: border-box;
+        }
+        .pwa-banner button { background: #4f46e5; color: white; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .ios-guide {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px;
+            background: white; color: #333; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            text-align: center; z-index: 9999;
+        }
+        .ios-guide .arrow-down { font-size: 30px; margin-top: 10px; color: #007aff; animation: bounce 1s infinite; }
+        .ios-guide .close-btn { position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 14px; color: #999; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(10px); } }
     </style>
 </head>
 <body class="bg-slate-900 text-white font-sans">
 
     <div id="wrapper">
         <div id="content"><div id="root" style="height: 100%;"></div></div>
+    </div>
+
+    <div id="android-install-banner" class="pwa-banner" style="display: none;">
+        <span>설치하고 더 편하게 이용하세요!</span>
+        <button id="install-btn">지금 설치</button>
+    </div>
+
+    <div id="ios-install-guide" class="ios-guide" style="display: none;">
+        <div class="guide-content">
+            <p>하단의 <strong>[공유]</strong> 버튼을 누르고<br><strong>'홈 화면에 추가'</strong>를 선택하세요.</p>
+            <div class="arrow-down">⬇</div>
+            <button onclick="this.parentElement.parentElement.style.display='none'" class="close-btn">닫기</button>
+        </div>
     </div>
 
 <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
@@ -33,10 +61,7 @@
         const PROXY_BASE_URL = 'https://winter-unit-6c7a.masaru2k.workers.dev/?url=';
         const GATE_API_URL = PROXY_BASE_URL + encodeURIComponent('http://apis.data.go.kr/B551177/StatusOfPassengerFlightsDSOdp/getPassengerDeparturesDSOdp?serviceKey=6uC38lshDqWE5U0LuYIGHZ3XeIIEocXrQmhXd11WEmLFLh5ygZSG%2FPNeYov0pyzTU99ISscjIZIp%2FL%2FE2oI%2FYA%3D%3D&type=xml');
         
-        // T2 전용 항공사 (대한항공, 진에어, 델타, 에어프랑스, KLM, 아시아나, 에어서울 등)
         const T2_AIRLINES = ['KE', 'LJ', 'DL', 'AF', 'KL', 'AM', 'CI', 'GA', 'MF', 'OZ', 'RS']; 
-        
-        // T1 전용 항공사 (OZ, RS 제거됨)
         const T1_AIRLINES = ['7C','8M','9C','AA','AC','AY','BR','BX','CA','CX','CZ','DD','EK','EY','FD','FM','GK','GS','HB','HO','HU','HX','HY','IT','JD','JX','KC','LO','MH','MM','MU','OM','PR','QD','QK','QR','SC','SL','SQ','SU','TG','TK','TR','TW','UA','UO','UZ','VJ','VN','VZ','XJ','ZE','ZH'];
 
         const Page = { Main: 0, PingLossTerm: 1, ErrorTypeSelect: 2, PingLossAirlines: 3, PingLossResult: 4 };
@@ -137,14 +162,11 @@
             };
             
             const getStatusText = (s) => s === '지연발생' ? '시스템 지연발생' : s;
-            
-            // 괄호를 제외한 순수 텍스트만 변수에 저장
             const finalString = `${airline} ${getStatusText(status)} 혼잡도 ${congestion}`;
             
             if (confirmed) {
                 return (
                     <div className="bg-slate-800 p-4 rounded-lg mb-3 border-l-4 border-indigo-500 shadow-md">
-                        {/* 화면에 출력할 때만 괄호 추가 */}
                         <div className="font-mono text-lg mb-3 break-all">[{finalString}]</div>
                         <div className="flex justify-end gap-2">
                             <button onClick={() => setConfirmed(false)} className="bg-slate-600 px-4 py-2 rounded font-bold text-sm">취소(수정)</button>
@@ -199,6 +221,67 @@
             const [selTerm, setSelTerm] = useState(null);
             const [errorType, setErrorType] = useState(null); 
             const [selAirlines, setSelAirlines] = useState(new Set());
+            const [showEx, setShowEx] = useState(false); // 종료 모달 상태
+
+            // PWA 설치 안내 로직
+            useEffect(() => {
+                const isIos = () => {
+                    const userAgent = window.navigator.userAgent.toLowerCase();
+                    return /iphone|ipad|ipod/.test(userAgent);
+                };
+                const isInStandaloneMode = () => ('standalone' in window.navigator) && (window.navigator.standalone);
+                
+                let deferredPrompt;
+                const banner = document.getElementById('android-install-banner');
+                const installBtn = document.getElementById('install-btn');
+                const iosGuide = document.getElementById('ios-install-guide');
+
+                window.addEventListener('beforeinstallprompt', (e) => {
+                    e.preventDefault();
+                    deferredPrompt = e;
+                    if (!isIos() && banner) banner.style.display = 'flex';
+                });
+
+                if (installBtn) {
+                    installBtn.addEventListener('click', async () => {
+                        if (banner) banner.style.display = 'none';
+                        if (deferredPrompt) {
+                            deferredPrompt.prompt();
+                            const { outcome } = await deferredPrompt.userChoice;
+                            deferredPrompt = null;
+                        }
+                    });
+                }
+
+                if (isIos() && !isInStandaloneMode() && iosGuide) {
+                    iosGuide.style.display = 'block';
+                }
+            }, []);
+
+            // 뒤로가기 및 앱 종료 로직
+            useEffect(() => {
+                const initHistory = () => {
+                    if (!window.history.state || window.history.state.page !== Page.Main) {
+                        window.history.replaceState({ page: 'root' }, '');
+                        window.history.pushState({ page: Page.Main }, '');
+                    }
+                };
+                
+                const handlePopState = (e) => {
+                    if (e.state && e.state.page === 'root') {
+                        // 메인 화면에서 뒤로가기를 눌러 root로 떨어졌을 때 종료 모달 띄우기
+                        setShowEx(true); 
+                        window.history.pushState({ page: Page.Main }, ''); 
+                    } else if (e.state && e.state.page !== undefined) {
+                        setPage(e.state.page); 
+                        setShowEx(false); 
+                    }
+                };
+                
+                initHistory();
+                window.addEventListener('popstate', handlePopState);
+                return () => window.removeEventListener('popstate', handlePopState);
+            }, []);
 
             useEffect(() => {
                 const load = async () => {
@@ -225,8 +308,24 @@
                 return Array.from(codes).sort();
             }, [flights, selTerm]);
 
-            const nav = (p) => setPage(p);
-            
+            // 브라우저 히스토리를 사용한 네비게이션 함수
+            const nav = (p) => {
+                window.history.pushState({ page: p }, '');
+                setPage(p);
+            };
+            const back = () => window.history.back();
+
+            // 진짜로 앱(창)을 닫는 함수
+            const exitApp = () => {
+                setShowEx(false);
+                if (navigator.app) {
+                    navigator.app.exitApp(); // 일부 하이브리드 환경 지원
+                } else {
+                    window.history.go(-2); // 히스토리를 탈출하여 기본 화면으로 복귀
+                    setTimeout(() => window.close(), 100); // 탭 닫기 시도 (PWA나 직접 연 창에서 동작)
+                }
+            };
+
             const handleTermSelect = (term) => {
                 setSelTerm(term);
                 nav(Page.ErrorTypeSelect); 
@@ -269,7 +368,7 @@
                     case Page.PingLossTerm:
                         return (
                             <div className="flex flex-col h-full">
-                                <Header onBack={() => nav(Page.Main)} title="장애 터미널 선택" />
+                                <Header onBack={back} title="장애 터미널 선택" />
                                 <main className="flex-grow p-5 flex flex-col justify-center gap-6">
                                     <button onClick={() => handleTermSelect('T1')} className="p-12 rounded-lg text-3xl font-bold bg-cyan-700 shadow-lg">T1 (1터미널)</button>
                                     <button onClick={() => handleTermSelect('T2')} className="p-12 rounded-lg text-3xl font-bold bg-emerald-700 shadow-lg">T2 (2터미널)</button>
@@ -280,7 +379,7 @@
                     case Page.ErrorTypeSelect:
                         return (
                             <div className="flex flex-col h-full">
-                                <Header onBack={() => nav(Page.PingLossTerm)} title={`${selTerm} 장애 유형 선택`} />
+                                <Header onBack={back} title={`${selTerm} 장애 유형 선택`} />
                                 <main className="flex-grow p-5 flex flex-col justify-center gap-4">
                                     <button onClick={() => handleErrorTypeSelect('전체')} className="p-8 rounded-lg text-2xl font-bold bg-indigo-600 shadow-lg">전체</button>
                                     <button onClick={() => handleErrorTypeSelect('네트워크망')} className="p-8 rounded-lg text-2xl font-bold bg-blue-600 shadow-lg">네트워크망</button>
@@ -292,7 +391,7 @@
                     case Page.PingLossAirlines:
                         return (
                             <div className="flex flex-col h-full">
-                                <Header onBack={() => nav(Page.ErrorTypeSelect)} title={`[${errorType}] 항공사 선택`} />
+                                <Header onBack={back} title={`[${errorType}] 항공사 선택`} />
                                 <div className="flex-grow overflow-y-auto p-3 content-start">
                                     <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
                                         {currentTerminalAirlines.map(al => (
@@ -354,35 +453,31 @@
                             }
                         });
 
-                        // 괄호를 제외한 순수 텍스트만 변수에 할당
                         const strNoFlight = noFlights.length > 0 ? `${noFlights.join(',')} 금일 운항편 없음` : null;
                         const strClosed = closed.length > 0 ? `${closed.join(',')} 카운터 마감` : null;
                         const strNotOpen = notOpen.length > 0 ? `${notOpen.join(',')} 카운터 오픈 전` : null;
 
                         return (
                             <div className="flex flex-col h-full">
-                                <Header onBack={() => nav(Page.PingLossAirlines)} title={`${selTerm} ${errorType} 보고내용`} />
+                                <Header onBack={back} title={`${selTerm} ${errorType} 보고내용`} />
                                 <div className="flex-grow overflow-y-auto p-4 space-y-6">
                                     
                                     {(strNoFlight || strClosed || strNotOpen) && (
                                         <div className="space-y-3">
                                             {strNoFlight && (
                                                 <div className="flex justify-between items-center bg-slate-800 p-4 rounded-lg">
-                                                    {/* 화면에 출력할 때만 괄호 추가 */}
                                                     <span className="font-mono text-lg text-rose-300 break-all">[{strNoFlight}]</span>
                                                     <button onClick={() => copySimpleText(strNoFlight)} className="ml-2 bg-cyan-600 px-3 py-2 rounded font-bold shrink-0">복사</button>
                                                 </div>
                                             )}
                                             {strClosed && (
                                                 <div className="flex justify-between items-center bg-slate-800 p-4 rounded-lg">
-                                                    {/* 화면에 출력할 때만 괄호 추가 */}
                                                     <span className="font-mono text-lg text-slate-400 break-all">[{strClosed}]</span>
                                                     <button onClick={() => copySimpleText(strClosed)} className="ml-2 bg-cyan-600 px-3 py-2 rounded font-bold shrink-0">복사</button>
                                                 </div>
                                             )}
                                             {strNotOpen && (
                                                 <div className="flex justify-between items-center bg-slate-800 p-4 rounded-lg">
-                                                    {/* 화면에 출력할 때만 괄호 추가 */}
                                                     <span className="font-mono text-lg text-amber-300 break-all">[{strNotOpen}]</span>
                                                     <button onClick={() => copySimpleText(strNotOpen)} className="ml-2 bg-cyan-600 px-3 py-2 rounded font-bold shrink-0">복사</button>
                                                 </div>
@@ -412,6 +507,19 @@
             return (
                 <div className="max-w-md mx-auto bg-slate-900 h-full shadow-2xl relative">
                     {renderContent()}
+                    
+                    {/* 앱 종료 확인 모달 */}
+                    {showEx && (
+                        <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50">
+                            <div className="bg-slate-800 p-6 rounded-lg w-4/5 text-center shadow-xl">
+                                <h3 className="text-xl font-bold mb-6 text-white">앱을 종료하시겠습니까?</h3>
+                                <div className="flex gap-3">
+                                    <button onClick={() => setShowEx(false)} className="flex-1 py-3 rounded bg-slate-600 font-bold text-white transition hover:bg-slate-500">취소</button>
+                                    <button onClick={exitApp} className="flex-1 py-3 rounded bg-rose-600 font-bold text-white transition hover:bg-rose-500">예(종료)</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
