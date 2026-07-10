@@ -60,10 +60,113 @@
         const PROXY_BASE_URL = 'https://winter-unit-6c7a.masaru2k.workers.dev/?url=';
         const GATE_API_URL = PROXY_BASE_URL + encodeURIComponent('http://apis.data.go.kr/B551177/StatusOfPassengerFlightsDSOdp/getPassengerDeparturesDSOdp?serviceKey=6uC38lshDqWE5U0LuYIGHZ3XeIIEocXrQmhXd11WEmLFLh5ygZSG%2FPNeYov0pyzTU99ISscjIZIp%2FL%2FE2oI%2FYA%3D%3D&type=xml');
         
-        const T2_AIRLINES = ['KE', 'LJ', 'DL', 'AF', 'KL', 'AM', 'CI', 'GA', 'MF', 'OZ', 'RS','BX']; 
-        const T1_AIRLINES = ['7C','8M','9C','AA','AC','AY','BR','CA','CX','CZ','DD','EK','EY','FD','FM','GK','GS','HB','HO','HU','HX','HY','IT','JD','JX','KC','LO','MH','MM','MU','OM','PR','QD','QK','QR','SC','SL','SQ','SU','TG','TK','TR','TW','UA','UO','UZ','VJ','VN','VZ','XJ','ZE','ZH'];
+        // --- 터미널, DCS, NW 통합 데이터베이스 ---
+        const AIRLINE_INFO = {
+            // T1 Airlines
+            '3U': { term: 'T1', dcs: ['TravelSky'], nw: ['ARINC'] },
+            '5J': { term: 'T1', dcs: ['Navitaire'], nw: ['SITA'] },
+            '7C': { term: 'T1', dcs: ['Navitaire'], nw: ['SITA'] },
+            '8M': { term: 'T1', dcs: ['HITIT'], nw: ['SITA'] },
+            '9C': { term: 'T1', dcs: ['IN-HOUSE'], nw: ['SITA'] },
+            '9G': { term: 'T1', dcs: ['Amadeus'], nw: ['ARINC'] },
+            'AA': { term: 'T1', dcs: ['IN-HOUSE'], nw: ['SITA'] },
+            'AC': { term: 'T1', dcs: ['Amadeus'], nw: ['SITA'] },
+            'AI': { term: 'T1', dcs: ['Amadeus'], nw: ['SITA'] },
+            'AK': { term: 'T1', dcs: ['Navitaire'], nw: ['ARINC'] },
+            'AQ': { term: 'T1', dcs: ['IPORT'], nw: ['ARINC'] },
+            'AY': { term: 'T1', dcs: ['Amadeus'], nw: ['SITA'] },
+            'BI': { term: 'T1', dcs: ['HITIT'], nw: ['SITA'] },
+            'BR': { term: 'T1', dcs: ['Amadeus'], nw: ['SITA'] },
+            'C6': { term: 'T1', dcs: ['IPORT'], nw: ['ARINC'] },
+            'CA': { term: 'T1', dcs: ['TravelSky'], nw: ['ARINC'] },
+            'CX': { term: 'T1', dcs: ['Amadeus'], nw: ['SITA'] },
+            'CZ': { term: 'T1', dcs: ['TravelSky'], nw: ['SITA'] },
+            'D7': { term: 'T1', dcs: ['Navitaire'], nw: ['ARINC'] },
+            'DV': { term: 'T1', dcs: ['SABRE'], nw: ['SITA'] },
+            'EK': { term: 'T1', dcs: ['IN-HOUSE'], nw: ['ARINC'] },
+            'ET': { term: 'T1', dcs: ['SABRE'], nw: ['ARINC'] },
+            'EY': { term: 'T1', dcs: ['Amadeus'], nw: ['SITA'] },
+            'FD': { term: 'T1', dcs: ['Navitaire'], nw: ['ARINC'] },
+            'FM': { term: 'T1', dcs: ['TravelSky'], nw: ['ARINC'] },
+            'GS': { term: 'T1', dcs: ['TravelSky'], nw: ['ARINC'] },
+            'GY': { term: 'T1', dcs: ['TravelSky'], nw: ['SITA'] },
+            'AS': { term: 'T1', dcs: ['Amadeus'], nw: ['SITA'] },
+            'HB': { term: 'T1', dcs: ['TravelSky'], nw: ['ARINC'] },
+            'HH': { term: 'T1', dcs: ['IPORT'], nw: ['ARINC'] },
+            'HO': { term: 'T1', dcs: ['TravelSky'], nw: ['ARINC'] },
+            'HU': { term: 'T1', dcs: ['TravelSky'], nw: ['ARINC'] },
+            'HX': { term: 'T1', dcs: ['TravelSky'], nw: ['ARINC'] },
+            'HY': { term: 'T1', dcs: ['Amadeus'], nw: ['SITA'] },
+            'IT': { term: 'T1', dcs: ['Navitaire'], nw: ['ARINC'] },
+            'JD': { term: 'T1', dcs: ['TravelSky'], nw: ['ARINC'] },
+            'JQ': { term: 'T1', dcs: ['Navitaire'], nw: ['SITA'] },
+            'KC': { term: 'T1', dcs: ['Amadeus'], nw: ['SITA'] },
+            'KN': { term: 'T1', dcs: ['TravelSky'], nw: ['ARINC'] },
+            'LH': { term: 'T1', dcs: ['Amadeus'], nw: ['SITA'] },
+            'LO': { term: 'T1', dcs: ['Amadeus'], nw: ['ARINC'] },
+            'LX': { term: 'T1', dcs: ['Amadeus'], nw: ['SITA'] },
+            'MO': { term: 'T1', dcs: ['SABRE'], nw: ['ARINC'] }, 
+            'MH': { term: 'T1', dcs: ['Amadeus'], nw: ['SITA'] },
+            'MM': { term: 'T1', dcs: ['IPORT'], nw: ['ARINC'] },
+            'MU': { term: 'T1', dcs: ['TravelSky'], nw: ['ARINC'] },
+            'NQ': { term: 'T1', dcs: ['RADIXX'], nw: ['ARINC'] },
+            'NX': { term: 'T1', dcs: ['TravelSky'], nw: ['ARINC'] },
+            'NZ': { term: 'T1', dcs: ['Q-Logic'], nw: ['ARINC'] },
+            'OD': { term: 'T1', dcs: ['SABRE'], nw: ['SITA'] },
+            'OM': { term: 'T1', dcs: ['Amadeus'], nw: ['SITA'] },
+            'PR': { term: 'T1', dcs: ['Amadeus'], nw: ['SITA'] },
+            'QR': { term: 'T1', dcs: ['Amadeus'], nw: ['SITA'] },
+            'QV': { term: 'T1', dcs: ['IPORT'], nw: ['ARINC'] },
+            'QW': { term: 'T1', dcs: ['TravelSky'], nw: ['ARINC'] },
+            'RF': { term: 'T1', dcs: ['IBS'], nw: ['SITA'] },
+            'SC': { term: 'T1', dcs: ['TravelSky'], nw: ['SITA'] },
+            'SQ': { term: 'T1', dcs: ['Amadeus'], nw: ['SITA'] },
+            'T5': { term: 'T1', dcs: ['HITIT'], nw: ['ARINC'] },
+            'TG': { term: 'T1', dcs: ['Amadeus'], nw: ['ARINC'] },
+            'TK': { term: 'T1', dcs: ['IN-HOUSE'], nw: ['ARINC'] },
+            'TR': { term: 'T1', dcs: ['Navitaire'], nw: ['SITA'] },
+            'TW': { term: 'T1', dcs: ['IBS', 'IPORT'], nw: ['SITA'] }, // 티웨이: 배열로 2개 등록 완벽 지원
+            'UA': { term: 'T1', dcs: ['Q-Logic'], nw: ['SITA'] },
+            'UL': { term: 'T1', dcs: ['Amadeus'], nw: ['ARINC'] },
+            'UO': { term: 'T1', dcs: ['Navitaire'], nw: ['SITA'] },
+            'VJ': { term: 'T1', dcs: ['IPORT'], nw: ['ARINC'] },
+            'VN': { term: 'T1', dcs: ['Amadeus'], nw: ['SITA'] },
+            'VZ': { term: 'T1', dcs: ['IPORT'], nw: ['ARINC'] },
+            'WE': { term: 'T1', dcs: ['IBS'], nw: ['전용망'] },
+            'WS': { term: 'T1', dcs: ['SABRE'], nw: ['SITA'] },
+            'XJ': { term: 'T1', dcs: ['Navitaire'], nw: ['ARINC'] },
+            'YP': { term: 'T1', dcs: ['Navitaire'], nw: ['SITA'] },
+            'Z2': { term: 'T1', dcs: ['Navitaire'], nw: ['ARINC'] },
+            'ZA': { term: 'T1', dcs: ['TravelSky'], nw: ['ARINC'] },
+            'ZE': { term: 'T1', dcs: ['Navitaire'], nw: ['전용망'] },
+            'ZG': { term: 'T1', dcs: ['SABRE'], nw: ['ARINC'] },
+            'ZH': { term: 'T1', dcs: ['TravelSky'], nw: ['ARINC'] },
 
-        const Page = { Main: 0, PingLossTerm: 1, ErrorTypeSelect: 2, PingLossAirlines: 3, PingLossResult: 4 };
+            // T2 Airlines
+            'AF': { term: 'T2', dcs: ['Amadeus'], nw: ['ARINC'] },
+            'AM': { term: 'T2', dcs: ['SABRE'], nw: ['SITA'] },
+            'BX': { term: 'T2', dcs: ['IN-HOUSE'], nw: ['ARINC'] },
+            'CI': { term: 'T2', dcs: ['Amadeus'], nw: ['ARINC'] },
+            'DL': { term: 'T2', dcs: ['IN-HOUSE'], nw: ['전용망'] },
+            'GA': { term: 'T2', dcs: ['Amadeus'], nw: ['SITA'] }, // 가루다 T2 이동 완료
+            'KE': { term: 'T2', dcs: ['Amadeus'], nw: ['ARINC'] },
+            'KL': { term: 'T2', dcs: ['Amadeus'], nw: ['ARINC'] },
+            'LJ': { term: 'T2', dcs: ['IBS'], nw: ['ARINC'] },
+            'MF': { term: 'T2', dcs: ['TravelSky'], nw: ['ARINC'] },
+            'OZ': { term: 'T2', dcs: ['Amadeus'], nw: ['SITA'] },
+            'RS': { term: 'T2', dcs: ['IBS'], nw: ['전용망'] },
+            'SK': { term: 'T2', dcs: ['Amadeus'], nw: ['SITA'] },
+            'VS': { term: 'T2', dcs: ['IN-HOUSE'], nw: ['SITA'] }
+        };
+
+        const Page = { 
+            Main: 0, 
+            PingLossTerm: 1, 
+            ErrorTypeSelect: 2, 
+            VendorSelect: 5, // 벤더사 선택 페이지 추가
+            PingLossAirlines: 3, 
+            PingLossResult: 4 
+        };
 
         const parseFlightsFromXML = (xmlText) => {
             const parser = new DOMParser(); 
@@ -288,9 +391,24 @@
                 load();
             }, []);
 
+            // 벤더사 목록 계산 (DCS 또는 네트워크망 선택 시)
+            const availableVendors = useMemo(() => {
+                if (!selTerm || !errorType || errorType === '전체') return [];
+                const key = errorType === 'DCS' ? 'dcs' : 'nw';
+                const vSet = new Set();
+                
+                Object.values(AIRLINE_INFO).forEach(info => {
+                    if (info.term === selTerm) {
+                        info[key].forEach(v => vSet.add(v.toUpperCase()));
+                    }
+                });
+                return Array.from(vSet).sort();
+            }, [selTerm, errorType]);
+
+            // 터미널별 항공사 리스트
             const currentTerminalAirlines = useMemo(() => {
                 if (!selTerm) return [];
-                const baseCodes = selTerm === 'T2' ? T2_AIRLINES : T1_AIRLINES;
+                const baseCodes = Object.keys(AIRLINE_INFO).filter(iata => AIRLINE_INFO[iata].term === selTerm);
                 const codes = new Set(baseCodes);
                 
                 flights.forEach(f => { 
@@ -328,6 +446,23 @@
             const handleErrorTypeSelect = (type) => {
                 setErrorType(type);
                 setSelAirlines(new Set()); 
+                
+                if (type === '전체') {
+                    nav(Page.PingLossAirlines);
+                } else {
+                    nav(Page.VendorSelect);
+                }
+            };
+
+            // 벤더사 선택 시 해당 벤더를 사용하는 항공사를 모두 자동 선택
+            const handleVendorSelect = (vendor) => {
+                const key = errorType === 'DCS' ? 'dcs' : 'nw';
+                const matchingAirlines = Object.keys(AIRLINE_INFO).filter(iata => {
+                    const info = AIRLINE_INFO[iata];
+                    return info.term === selTerm && info[key].map(v => v.toUpperCase()).includes(vendor);
+                });
+                
+                setSelAirlines(new Set(matchingAirlines));
                 nav(Page.PingLossAirlines);
             };
 
@@ -382,6 +517,26 @@
                             </div>
                         );
 
+                    case Page.VendorSelect:
+                        return (
+                            <div className="flex flex-col h-full">
+                                <Header onBack={back} title={`${errorType} 벤더사 선택`} />
+                                <div className="flex-grow overflow-y-auto p-5 content-start">
+                                    <div className="text-slate-300 mb-6 text-sm">
+                                        벤더사를 선택하면 해당 시스템을 사용하는 <br/>항공사들이 자동으로 모두 선택됩니다.
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {availableVendors.map(v => (
+                                            <button key={v} onClick={() => handleVendorSelect(v)} 
+                                                className="py-5 rounded-lg font-bold text-lg bg-slate-700 hover:bg-slate-600 transition shadow-md">
+                                                {v}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+
                     case Page.PingLossAirlines:
                         return (
                             <div className="flex flex-col h-full">
@@ -409,7 +564,6 @@
                     case Page.PingLossResult:
                         const nowMs = new Date().getTime();
                         
-                        // 오늘 날짜 문자열 구하기 (예: "20260709")
                         const getYYYYMMDD = (d) => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
                         const todayStr = getYYYYMMDD(new Date());
 
@@ -419,7 +573,6 @@
                         const activeList = [];
 
                         Array.from(selAirlines).forEach(al => {
-                            // 필터링 강화: 오늘 항공편이거나 4시간 이내로 남은 내일(새벽) 항공편만 포함
                             const termFlights = flights.filter(f => {
                                 const isMatch = f.iata === al && 
                                     (selTerm === 'T1' ? (f.terminalid === 'P01' || f.terminalid === 'P02') : f.terminalid === 'P03');
@@ -436,11 +589,9 @@
                                 const diffMins = (dep.getTime() - nowMs) / (1000 * 60);
                                 const isToday = f.scheduleDateTime.startsWith(todayStr);
 
-                                // 오늘 편이거나, 4시간(240분) 이내의 임박한 비행편만 계산에 포함
                                 return isToday || (!isToday && diffMins <= 240);
                             });
 
-                            // 조건에 맞는 비행편이 전혀 없으면 '금일 운항편 없음'으로 처리
                             if (termFlights.length === 0) {
                                 noFlights.push(al);
                                 return;
